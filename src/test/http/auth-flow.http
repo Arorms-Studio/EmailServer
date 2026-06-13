@@ -1,0 +1,77 @@
+@host = http://localhost:8080
+@contentType = application/json
+@badUser = no-such-user
+@password = wrong-password
+
+### 1) 登录 - 正确账号
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{ "username": "alice", "password": "alice-password" }
+
+> {%
+    client.global.set("access", response.body.accessToken);
+    client.global.set("refreshCookie", response.headers.valueOf("Set-Cookie"));
+%}
+
+### 2) 登录 - 错误密码
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{ "username": "alice", "password": "{{password}}" }
+
+### 3) 登录 - 用户不存在
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{ "username": "{{badUser}}", "password": "whatever" }
+
+### 4) 登录 - 缺字段
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{ "username": "alice" }
+
+### 5) /me 带 token
+GET {{host}}/api/auth/me
+Authorization: Bearer {{access}}
+
+### 6) /me 不带 token
+GET {{host}}/api/auth/me
+
+### 7) /me 带 garbage token
+GET {{host}}/api/auth/me
+Authorization: Bearer not-a-real-jwt
+
+### 8) 受保护接口
+POST {{host}}/api/mail/send
+Authorization: Bearer {{access}}
+Content-Type: {{contentType}}
+
+{ "to": "bob@arorms.cn", "subject": "hi", "content": "<p>hi</p>" }
+
+### 9) 受保护接口无 token
+POST {{host}}/api/mail/send
+Content-Type: {{contentType}}
+
+{ "to": "bob@arorms.cn", "subject": "hi", "content": "<p>hi</p>" }
+
+### 10) refresh - 正常
+POST {{host}}/api/auth/refresh
+
+### 11) refresh - 拿 access 当 refresh
+POST {{host}}/api/auth/refresh
+Cookie: REFRESH_TOKEN={{access}}
+
+### 12) refresh - 缺 cookie
+POST {{host}}/api/auth/refresh
+
+### 13) refresh - 篡改一字符
+POST {{host}}/api/auth/refresh
+Cookie: REFRESH_TOKEN={{access}}xxx
+
+### 14) CORS 预检
+OPTIONS {{host}}/api/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
