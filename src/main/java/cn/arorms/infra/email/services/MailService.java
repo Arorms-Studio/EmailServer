@@ -1,6 +1,7 @@
 package cn.arorms.infra.email.services;
 
 import cn.arorms.infra.email.entities.Mail;
+import cn.arorms.infra.email.entities.Mailbox;
 import cn.arorms.infra.email.enums.MailboxType;
 import cn.arorms.infra.email.repositories.MailRepository;
 import cn.arorms.infra.email.repositories.MailboxRepository;
@@ -55,7 +56,17 @@ public class MailService {
 
         var sentBox = mailboxRepository
                 .findByOwnerIdAndType(fromUser.getUserId(), MailboxType.SENT)
-                .orElseThrow(() -> new IllegalStateException("SENT mailbox not found for user " + fromUser.getUserId()));
+                .orElseGet(() -> {
+                    // Auto-provision a SENT mailbox for users created before
+                    // the registration flow provisioned one. Cheap to do
+                    // lazily; a unique (owner_id, type) index would be a
+                    // future improvement.
+                    Mailbox box = new Mailbox();
+                    box.setOwner(userRepository.getReferenceById(fromUser.getUserId()));
+                    box.setType(MailboxType.SENT);
+                    box.setName("Sent");
+                    return mailboxRepository.save(box);
+                });
 
         Instant now = Instant.now();
         Mail mail = new Mail(sentBox, messageId, fromUser.getEmailAddress(), subject, now, true, null);

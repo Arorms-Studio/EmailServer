@@ -1,13 +1,14 @@
 package cn.arorms.infra.email.controllers;
 
-import cn.arorms.infra.email.controllers.dto.LoginRequest;
-import cn.arorms.infra.email.controllers.dto.TokenResponse;
-import cn.arorms.infra.email.controllers.dto.UserInfoResponse;
+import cn.arorms.infra.email.dtos.LoginRequest;
+import cn.arorms.infra.email.dtos.RegisterRequest;
+import cn.arorms.infra.email.dtos.TokenResponse;
+import cn.arorms.infra.email.dtos.UserInfoResponse;
 import cn.arorms.infra.email.services.AuthLoginResult;
 import cn.arorms.infra.email.services.AuthService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,14 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<TokenResponse> register(@RequestBody RegisterRequest req) {
+        AuthLoginResult result = authService.register(req);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, result.refreshCookie().toString())
+                .body(result.tokenResponse());
     }
 
     @PostMapping("/login")
@@ -44,7 +53,8 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public UserInfoResponse me(@AuthenticationPrincipal Jwt jwt) {
+    public UserInfoResponse me(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getCredentials();
         return authService.me(jwt);
     }
 }

@@ -1,4 +1,4 @@
-package cn.arorms.infra.email.controllers.dto;
+package cn.arorms.infra.email.dtos;
 
 public record LoginRequest(String username, String password) {
 }

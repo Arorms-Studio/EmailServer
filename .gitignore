@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+**/.env
+
+src/test/curl/.access.token
+src/test/curl/.refresh.cookie
+src/test/curl/.refresh.token
+
+spring-dev.log

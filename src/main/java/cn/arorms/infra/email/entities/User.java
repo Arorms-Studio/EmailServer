@@ -27,9 +27,12 @@ public class User {
     private Instant createdAt;
 
     @PrePersist
-    private void synchronizeEmail() {
+    private void onCreate() {
         if (this.emailAddress == null || this.emailAddress.isBlank()) {
             this.emailAddress = this.username + "@arorms.cn";
+        }
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
         }
     }
 

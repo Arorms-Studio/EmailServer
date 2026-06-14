@@ -1,18 +1,23 @@
 package cn.arorms.infra.email.services;
 
 import cn.arorms.infra.email.config.JwtProperties;
-import cn.arorms.infra.email.controllers.dto.LoginRequest;
-import cn.arorms.infra.email.controllers.dto.TokenResponse;
-import cn.arorms.infra.email.controllers.dto.UserInfoResponse;
+import cn.arorms.infra.email.dtos.LoginRequest;
+import cn.arorms.infra.email.dtos.RegisterRequest;
+import cn.arorms.infra.email.dtos.TokenResponse;
+import cn.arorms.infra.email.dtos.UserInfoResponse;
+import cn.arorms.infra.email.entities.User;
+import cn.arorms.infra.email.exception.DuplicateUsernameException;
 import cn.arorms.infra.email.exception.InvalidRefreshTokenException;
 import cn.arorms.infra.email.repositories.UserRepository;
 import cn.arorms.infra.email.security.AppUserPrincipal;
 import cn.arorms.infra.email.security.JwtService;
 import cn.arorms.infra.email.security.RefreshCookieFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -25,17 +30,20 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshCookieFactory cookieFactory;
     private final JwtProperties props;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthService(AuthenticationManager authManager,
                        UserRepository userRepository,
                        JwtService jwtService,
                        RefreshCookieFactory cookieFactory,
-                       JwtProperties props) {
+                       JwtProperties props,
+                       PasswordEncoder passwordEncoder) {
         this.authManager = authManager;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.cookieFactory = cookieFactory;
         this.props = props;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public AuthLoginResult login(LoginRequest req) {
@@ -46,6 +54,32 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(req.username(), req.password()));
         AppUserPrincipal principal = (AppUserPrincipal) auth.getPrincipal();
         return mintTokens(principal.getUsername(), principal.getEmailAddress());
+    }
+
+    public AuthLoginResult register(RegisterRequest req) {
+        if (req == null
+                || !StringUtils.hasText(req.username())
+                || req.username().length() > 64) {
+            throw new IllegalArgumentException("Username must be 1-64 characters");
+        }
+        if (!StringUtils.hasText(req.password())
+                || req.password().length() < 8
+                || req.password().length() > 72) {
+            throw new IllegalArgumentException("Password must be 8-72 characters");
+        }
+        String username = req.username();
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new DuplicateUsernameException(username);
+        }
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(req.password()));
+        try {
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateUsernameException(username);
+        }
+        return mintTokens(user.getUsername(), user.getEmailAddress());
     }
 
     public AuthLoginResult refresh(String refreshTokenValue) {
@@ -68,7 +102,7 @@ public class AuthService {
         return new UserInfoResponse(username, emailAddress);
     }
 
-    private AuthLoginResult mintTokens(String username, String emailAddress) {
+    AuthLoginResult mintTokens(String username, String emailAddress) {
         String access = jwtService.issueAccess(username, emailAddress);
         String refresh = jwtService.issueRefresh(username, emailAddress);
         TokenResponse tokenResponse = TokenResponse.bearer(access, props.getAccessTtl().toSeconds());

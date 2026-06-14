@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,6 +26,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorBody> unreadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
         return ResponseEntity.badRequest()
                 .body(ErrorBody.of("bad_request", "Malformed JSON", req.getRequestURI()));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorBody> badRequest(IllegalArgumentException ex, HttpServletRequest req) {
+        return ResponseEntity.badRequest()
+                .body(ErrorBody.of("bad_request", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(DuplicateUsernameException.class)
+    public ResponseEntity<ErrorBody> conflict(DuplicateUsernameException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorBody.of("username_taken", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(MissingRequestCookieException.class)
