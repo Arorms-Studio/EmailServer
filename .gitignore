@@ -34,8 +34,8 @@ build/
 
 **/.env
 
-src/test/curl/.access.token
-src/test/curl/.refresh.cookie
-src/test/curl/.refresh.token
+test/.access.token
+test/.refresh.cookie
+test/.refresh.token
 
 spring-dev.log

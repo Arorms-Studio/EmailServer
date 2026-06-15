@@ -10,4 +10,4 @@ source "$ENV_FILE"
 set +a
 
 cd "$(dirname "$0")"
-exec mvn spring-boot:run
+exec mvn -pl email-app spring-boot:run
