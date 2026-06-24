@@ -10,7 +10,9 @@ source "$SCRIPT_DIR/lib.sh"
 banner "01 — Register a new user (POST /api/auth/register)"
 
 body=$(jq -n --arg u "$USERNAME" --arg p "$PASSWORD" \
-  '{username: $u, password: $p}')
+                --arg e "${REGISTRATION_EMAIL:-test@example.com}" \
+                --arg c "${VERIFICATION_CODE:-000000}" \
+  '{username: $u, password: $p, email: $e, code: $c}')
 
 echo "Request body: $body"
 echo

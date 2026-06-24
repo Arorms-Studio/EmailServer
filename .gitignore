@@ -39,3 +39,4 @@ test/.refresh.cookie
 test/.refresh.token
 
 spring-dev.log
+**/*.gz

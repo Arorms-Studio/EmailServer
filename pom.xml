@@ -20,6 +20,7 @@
     <modules>
         <module>email-domain</module>
         <module>email-security</module>
+        <module>email-redis</module>
         <module>email-app</module>
     </modules>
 

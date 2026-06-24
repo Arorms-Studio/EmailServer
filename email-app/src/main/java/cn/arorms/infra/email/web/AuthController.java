@@ -6,6 +6,7 @@ import cn.arorms.infra.email.domain.dto.TokenResponse;
 import cn.arorms.infra.email.domain.dto.UserInfoResponse;
 import cn.arorms.infra.email.service.AuthLoginResult;
 import cn.arorms.infra.email.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,15 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    @PostMapping("/send-code")
+    public ResponseEntity<Void> sendCode(
+            @RequestBody SendCodeRequest req,
+            HttpServletRequest http) {
+        String ip = http.getRemoteAddr();
+        authService.sendCode(req.email(), ip);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

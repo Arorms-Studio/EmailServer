@@ -1,8 +1,12 @@
 package cn.arorms.infra.email.web.error;
 
+import cn.arorms.infra.email.domain.exception.DuplicateEmailException;
 import cn.arorms.infra.email.domain.exception.DuplicateUsernameException;
 import cn.arorms.infra.email.domain.exception.ErrorBody;
+import cn.arorms.infra.email.domain.exception.InvalidEmailFormatException;
 import cn.arorms.infra.email.domain.exception.InvalidRefreshTokenException;
+import cn.arorms.infra.email.domain.exception.InvalidVerificationCodeException;
+import cn.arorms.infra.email.domain.exception.RateLimitedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +45,35 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorBody> conflict(DuplicateUsernameException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorBody.of("username_taken", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidEmailFormatException.class)
+    public ResponseEntity<ErrorBody> badEmail(InvalidEmailFormatException ex,
+                                              HttpServletRequest req) {
+        return ResponseEntity.badRequest()
+            .body(ErrorBody.of("bad_request", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidVerificationCodeException.class)
+    public ResponseEntity<ErrorBody> badCode(InvalidVerificationCodeException ex,
+                                              HttpServletRequest req) {
+        return ResponseEntity.badRequest()
+            .body(ErrorBody.of("invalid_code", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ErrorBody> emailTaken(DuplicateEmailException ex,
+                                                HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ErrorBody.of("email_taken", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(RateLimitedException.class)
+    public ResponseEntity<ErrorBody> rateLimited(RateLimitedException ex,
+                                                 HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+            .body(ErrorBody.of("rate_limited", ex.getMessage(), req.getRequestURI()));
     }
 
     @ExceptionHandler(MissingRequestCookieException.class)

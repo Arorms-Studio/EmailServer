@@ -17,6 +17,9 @@ public class User {
     @Column(nullable = false)
     private String emailAddress;
 
+    @Column(name = "registration_email", length = 255, unique = true)
+    private String registrationEmail;
+
     @Column(nullable = false)
     private String password;
 
@@ -42,6 +45,14 @@ public class User {
 
     public void setEmailAddress(String emailAddress) {
         this.emailAddress = emailAddress;
+    }
+
+    public String getRegistrationEmail() {
+        return registrationEmail;
+    }
+
+    public void setRegistrationEmail(String registrationEmail) {
+        this.registrationEmail = registrationEmail;
     }
 
     public Long getId() {
